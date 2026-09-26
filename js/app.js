@@ -1,5 +1,5 @@
-import { cloneDefaults, simulate } from './model.js';
-import { renderCharts } from './charts.js';
+import { cloneDefaults, simulate } from './model.js?v=7dfa636';
+import { renderCharts } from './charts.js?v=7dfa636';
 const $ = id => document.getElementById(id), fmt = n => Math.round(n).toLocaleString(), day = i => { const d=new Date(Date.UTC(2026,8,28+i*7)); return d.toISOString().slice(0,10); };
 let state=cloneDefaults(), result, preset='balanced', stateHistory=[], redo=[], dirty=false, windowStart=0, buckets={graph:1,table:1};
 function clone(x){return JSON.parse(JSON.stringify(x))}
