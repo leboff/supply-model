@@ -1,14 +1,10 @@
 let charts = {};
-const colors = ['#62d5c2','#7c8cff','#f6b44d','#f1708c','#a78bfa'];
-function draw(id, config) { charts[id]?.destroy(); charts[id] = new Chart(document.getElementById(id), config); }
-export function renderCharts(result) {
-  const labels = result.weeks.map(w => `W${w.week}`), segs = result.config.segments;
-  draw('supplyChart', { type:'bar', data:{ labels, datasets:[
-    { label:'Arrivals', data:result.weeks.map(w=>w.arrivals), backgroundColor:'#62d5c2', stack:'s' },
-    { label:'Demand', data:result.weeks.map(w=>w.demand.reduce((a,b)=>a+b,0)), type:'line', borderColor:'#f6b44d', pointRadius:0 }
-  ]}, options: base('Supply arrivals vs demand', true) });
-  draw('fillChart', { type:'line', data:{labels,datasets:segs.map((s,i)=>({label:s.name,data:result.weeks.map(w=>w.demand[i]?w.shipments[i]/w.demand[i]*100:100),borderColor:colors[i],pointRadius:0,tension:.25}))},options:base('Weekly fill rate (%)') });
-  draw('stockChart', { type:'line', data:{labels,datasets:[{label:'Inventory',data:result.weeks.map(w=>w.inventory),borderColor:'#62d5c2',pointRadius:0},{label:'Backlog',data:result.weeks.map(w=>w.backlog.reduce((a,b)=>a+b,0)),borderColor:'#f1708c',pointRadius:0}]},options:base('Units') });
-  draw('allocationChart', { type:'bar', data:{labels,datasets:segs.map((s,i)=>({label:s.name,data:result.weeks.map(w=>w.shipments[i]),backgroundColor:colors[i],stack:'a'}))},options:base('Units allocated',true) });
+const colors = ['#3B8F81','#12232D','#6750A0','#215FC9','#8FCE00'];
+function draw(id, config) { const el=document.getElementById(id); if(!el || !window.Chart) return; charts[id]?.destroy(); charts[id]=new Chart(el,config); }
+function labels(result){return result.weeks.map((_,i)=>`Wk ${((39+i)%52)+1}`)}
+function base(stacked=false) { return {responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{color:'#5B6B73',boxWidth:10,font:{family:'Kumbh Sans',size:10}}},tooltip:{backgroundColor:'#12232D',titleFont:{family:'Kumbh Sans'},bodyFont:{family:'Kumbh Sans'}}},scales:{x:{stacked,ticks:{color:'#5B6B73',font:{family:'Kumbh Sans',size:10},maxRotation:0},grid:{color:'#E6EBED'}},y:{stacked,beginAtZero:true,ticks:{color:'#5B6B73',font:{family:'Kumbh Sans',size:10}},grid:{color:'#E6EBED'}}}}; }
+export function renderCharts(result) { const labs=labels(result), segs=result.config.segments, shortage=result.weeks.map(w=>w.constrained ? 1 : 0);
+  draw('supplyChart',{type:'bar',data:{labels:labs,datasets:[{label:'Available supply',data:result.weeks.map(w=>w.arrivals),backgroundColor:'#3B8F81',borderRadius:1},{label:'Demand',data:result.weeks.map(w=>w.demand.reduce((a,b)=>a+b,0)),type:'line',borderColor:'#12232D',borderDash:[5,4],borderWidth:2,pointRadius:0,tension:.2},{label:'Constrained week',data:shortage.map((x,i)=>x ? Math.max(result.weeks[i].arrivals,result.weeks[i].demand.reduce((a,b)=>a+b,0)) : 0),backgroundColor:'#F4562C25',borderWidth:0,barPercentage:1.08,categoryPercentage:1.08}]},options:base()});
+  draw('fillChart',{type:'line',data:{labels:labs,datasets:segs.map((s,i)=>({label:s.name,data:result.weeks.map(w=>w.demand[i] ? w.shipments[i]/w.demand[i]*100 : 100),borderColor:colors[i],borderWidth:2,pointRadius:0,tension:.25}))},options:{...base(),scales:{...base().scales,y:{...base().scales.y,max:105,ticks:{...base().scales.y.ticks,callback:v=>`${v}%`}}}});
+  draw('allocationChart',{type:'bar',data:{labels:labs,datasets:segs.map((s,i)=>({label:s.name,data:result.weeks.map(w=>w.shipments[i]),backgroundColor:colors[i],stack:'shipments',borderWidth:0}))},options:base(true)});
 }
-function base(title, stacked=false) { return { responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#b8c1d9'}},title:{display:true,text:title,color:'#eef2ff',font:{size:13}}},scales:{x:{stacked,ticks:{color:'#8490ae'},grid:{color:'#28324b'}},y:{stacked,ticks:{color:'#8490ae'},grid:{color:'#28324b'},beginAtZero:true}}}; }
