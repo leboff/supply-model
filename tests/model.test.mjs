@@ -1,0 +1,9 @@
+import test from 'node:test'; import assert from 'node:assert/strict';
+import { simulate, cloneDefaults } from '../js/model.js';
+const base=()=>{const x=cloneDefaults();x.weeks=5;x.startingInventory=1000;x.plants=[];x.segments=[{name:'A',baseline:100,growth:0,seasonality:0,noise:0,tier:1,margin:10,backorder:true},{name:'B',baseline:100,growth:0,seasonality:0,noise:0,tier:2,margin:5,backorder:false}];return x};
+test('conserves demand by segment cumulatively',()=>{const r=simulate(base());r.totals.forEach((t,i)=>assert.ok(Math.abs(t.shipped+r.weeks.at(-1).backlog[i]+t.lost-t.demand)<1e-7))});
+test('never allocates more than available',()=>{const c=base();c.startingInventory=40;const r=simulate(c);r.weeks.forEach(w=>assert.ok(w.shipments.reduce((a,b)=>a+b,0)<=w.inventory+w.shipments.reduce((a,b)=>a+b,0)+1e-8))});
+test('priority serves higher tier first',()=>{const c=base();c.weeks=1;c.startingInventory=120;const w=simulate(c).weeks[0];assert.equal(w.shipments[0],100);assert.equal(w.shipments[1],20)});
+test('fair share follows demand proportions',()=>{const c=base();c.weeks=1;c.startingInventory=60;c.policy='fair';c.segments[1].baseline=200;const w=simulate(c).weeks[0];assert.ok(Math.abs(w.shipments[1]/w.shipments[0]-2)<1e-9)});
+test('lead time delays arrivals',()=>{const c=base();c.startingInventory=0;c.weeks=3;c.plants=[{name:'P',capacity:100,yield:100,leadTime:2,ramp:0}];const r=simulate(c);assert.equal(r.weeks[0].arrivals,0);assert.equal(r.weeks[1].arrivals,0);assert.equal(r.weeks[2].arrivals,100)});
+test('same seed is reproducible',()=>{const a=cloneDefaults(),b=cloneDefaults();assert.deepEqual(simulate(a).weeks,simulate(b).weeks)});
