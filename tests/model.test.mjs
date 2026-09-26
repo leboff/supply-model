@@ -7,3 +7,4 @@ test('priority serves higher tier first',()=>{const c=base();c.weeks=1;c.startin
 test('fair share follows demand proportions',()=>{const c=base();c.weeks=1;c.startingInventory=60;c.policy='fair';c.segments[1].baseline=200;const w=simulate(c).weeks[0];assert.ok(Math.abs(w.shipments[1]/w.shipments[0]-2)<1e-9)});
 test('lead time delays arrivals',()=>{const c=base();c.startingInventory=0;c.weeks=3;c.plants=[{name:'P',capacity:100,yield:100,leadTime:2,ramp:0}];const r=simulate(c);assert.equal(r.weeks[0].arrivals,0);assert.equal(r.weeks[1].arrivals,0);assert.equal(r.weeks[2].arrivals,100)});
 test('same seed is reproducible',()=>{const a=cloneDefaults(),b=cloneDefaults();assert.deepEqual(simulate(a).weeks,simulate(b).weeks)});
+test('demand overrides replace an individual segment week',()=>{const c=base();c.demandOverrides={'1:2':275};const r=simulate(c);assert.equal(r.weeks[2].demand[1],275)});

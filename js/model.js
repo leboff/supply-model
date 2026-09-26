@@ -77,7 +77,10 @@ export function simulate(input = defaults) {
     const demand = c.segments.map((s, i) => {
       const seasonal = 1 + s.seasonality / 100 * Math.sin((w / 13) * Math.PI * 2 + i);
       const noisy = 1 + (random() * 2 - 1) * s.noise / 100;
-      return Math.max(0, s.baseline * Math.pow(1 + s.growth / 100, w) * seasonal * noisy);
+      const generated = Math.max(0, s.baseline * Math.pow(1 + s.growth / 100, w) * seasonal * noisy);
+      // UI edits are sparse and optional, keeping the original model contract intact.
+      const override = c.demandOverrides?.[`${i}:${w}`];
+      return Number.isFinite(Number(override)) ? Math.max(0, Number(override)) : generated;
     });
     const openingBacklog = [...backlog];
     const needs = demand.map((d, i) => d + (c.segments[i].backorder ? backlog[i] : 0));
